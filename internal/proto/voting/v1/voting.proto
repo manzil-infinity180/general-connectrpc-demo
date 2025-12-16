@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package voting.v1;
+
+import "google/protobuf/timestamp.proto";
+
+message Option {
+  string option_id = 1;
+  string option_text = 2;
+  int32 vote_count = 3; // real time
+}
+
+message Poll {
+  string poll_id = 1;
+  string question = 2;
+  repeated Option options = 3; // Use 'repeated' for a list of options
+  string creator_public_key = 4;
+  google.protobuf.Timestamp creation_timestamp = 5;
+}
+
+message VoteSubmission {
+  string poll_id = 1;
+  string option_id = 2;
+  string voter_id_hash = 3; // Hashed identifier to prevent duplicate voting
+  google.protobuf.Timestamp submission_timestamp = 4;
+}
+
+// Message for real-time result updates to clients
+message PollResultUpdate {
+  string poll_id = 1;
+  // Use a map or a repeated message of updated counts for efficiency
+  repeated Option updated_options = 2;
+  int32 total_votes_cast = 3;
+}
+
+// Service definition using gRPC for real-time communication
+// gRPC supports bi-directional streaming ideal for real-time apps
+service VotingService {
+  // Endpoint for submitting a single vote (unary RPC)
+  rpc SubmitVote(VoteSubmission) returns (VoteReceipt);
+
+  // Endpoint for real-time result streaming (server streaming)
+  // Client sends an empty request/poll ID, server streams updates
+  rpc StreamResults(PollRequest) returns (stream PollResultUpdate);
+
+  // Endpoint for creating a new poll
+  rpc CreatePoll(PollCreationRequest) returns (PollCreationResponse);
+}
+
+// Simple response message for a submitted vote
+message VoteReceipt {
+  bool success = 1;
+  string message = 2;
+  string vote_id = 3;
+}
+
+// Messages for poll creation flow
+message PollCreationRequest {
+  string question = 1;
+  repeated string option_texts = 2;
+  string creator_public_key = 3;
+}
+
+message PollRequest {
+  string poll_id = 1;
+}
+
+message PollCreationResponse {
+  string poll_id = 1;
+  string shareable_url = 2;
+}
