@@ -33,14 +33,27 @@ func NewVotingService(
 	}
 }
 
-func (s *VotingService) CreatePoll(ctx context.Context,
-	req *connect.Request[votingv1.PollCreationRequest]) (*connect.Response[votingv1.PollCreationResponse], error) {
+func (s *VotingService) CreatePoll(
+	ctx context.Context,
+	req *connect.Request[votingv1.PollCreationRequest],
+) (*connect.Response[votingv1.PollCreationResponse], error) {
 
-	userID := ctx.Value(auth.UserIDKey).(string)
-	pollID, _ := s.polls.CreatePoll(ctx, req.Msg.Question, userID)
-	for _, opt := range req.Msg.OptionTexts {
-		s.options.CreateOption(ctx, pollID, opt)
+	userID, ok := ctx.Value(auth.UserIDKey).(string)
+	if !ok || userID == "" {
+		return nil, connect.NewError(connect.CodeUnauthenticated, nil)
 	}
+
+	pollID, err := s.polls.CreatePoll(ctx, req.Msg.Question, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, opt := range req.Msg.OptionTexts {
+		if err := s.options.CreateOption(ctx, pollID, opt); err != nil {
+			return nil, err
+		}
+	}
+
 	return connect.NewResponse(&votingv1.PollCreationResponse{
 		PollId: pollID,
 	}), nil
