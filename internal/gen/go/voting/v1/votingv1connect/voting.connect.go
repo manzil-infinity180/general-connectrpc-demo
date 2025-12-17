@@ -8,6 +8,7 @@ import (
 	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
 	v1 "rahulxf.com/general-connectrpc-demo/internal/gen/go/voting/v1"
 	strings "strings"
@@ -42,6 +43,8 @@ const (
 	// VotingServiceCreatePollProcedure is the fully-qualified name of the VotingService's CreatePoll
 	// RPC.
 	VotingServiceCreatePollProcedure = "/voting.v1.VotingService/CreatePoll"
+	// VotingServiceClosePollProcedure is the fully-qualified name of the VotingService's ClosePoll RPC.
+	VotingServiceClosePollProcedure = "/voting.v1.VotingService/ClosePoll"
 )
 
 // VotingServiceClient is a client for the voting.v1.VotingService service.
@@ -53,6 +56,7 @@ type VotingServiceClient interface {
 	StreamResults(context.Context, *connect.Request[v1.PollRequest]) (*connect.ServerStreamForClient[v1.PollResultUpdate], error)
 	// Endpoint for creating a new poll
 	CreatePoll(context.Context, *connect.Request[v1.PollCreationRequest]) (*connect.Response[v1.PollCreationResponse], error)
+	ClosePoll(context.Context, *connect.Request[v1.PollRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewVotingServiceClient constructs a client for the voting.v1.VotingService service. By default,
@@ -84,6 +88,12 @@ func NewVotingServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(votingServiceMethods.ByName("CreatePoll")),
 			connect.WithClientOptions(opts...),
 		),
+		closePoll: connect.NewClient[v1.PollRequest, emptypb.Empty](
+			httpClient,
+			baseURL+VotingServiceClosePollProcedure,
+			connect.WithSchema(votingServiceMethods.ByName("ClosePoll")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -92,6 +102,7 @@ type votingServiceClient struct {
 	submitVote    *connect.Client[v1.VoteSubmission, v1.VoteReceipt]
 	streamResults *connect.Client[v1.PollRequest, v1.PollResultUpdate]
 	createPoll    *connect.Client[v1.PollCreationRequest, v1.PollCreationResponse]
+	closePoll     *connect.Client[v1.PollRequest, emptypb.Empty]
 }
 
 // SubmitVote calls voting.v1.VotingService.SubmitVote.
@@ -109,6 +120,11 @@ func (c *votingServiceClient) CreatePoll(ctx context.Context, req *connect.Reque
 	return c.createPoll.CallUnary(ctx, req)
 }
 
+// ClosePoll calls voting.v1.VotingService.ClosePoll.
+func (c *votingServiceClient) ClosePoll(ctx context.Context, req *connect.Request[v1.PollRequest]) (*connect.Response[emptypb.Empty], error) {
+	return c.closePoll.CallUnary(ctx, req)
+}
+
 // VotingServiceHandler is an implementation of the voting.v1.VotingService service.
 type VotingServiceHandler interface {
 	// Endpoint for submitting a single vote (unary RPC)
@@ -118,6 +134,7 @@ type VotingServiceHandler interface {
 	StreamResults(context.Context, *connect.Request[v1.PollRequest], *connect.ServerStream[v1.PollResultUpdate]) error
 	// Endpoint for creating a new poll
 	CreatePoll(context.Context, *connect.Request[v1.PollCreationRequest]) (*connect.Response[v1.PollCreationResponse], error)
+	ClosePoll(context.Context, *connect.Request[v1.PollRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewVotingServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -145,6 +162,12 @@ func NewVotingServiceHandler(svc VotingServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(votingServiceMethods.ByName("CreatePoll")),
 		connect.WithHandlerOptions(opts...),
 	)
+	votingServiceClosePollHandler := connect.NewUnaryHandler(
+		VotingServiceClosePollProcedure,
+		svc.ClosePoll,
+		connect.WithSchema(votingServiceMethods.ByName("ClosePoll")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/voting.v1.VotingService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case VotingServiceSubmitVoteProcedure:
@@ -153,6 +176,8 @@ func NewVotingServiceHandler(svc VotingServiceHandler, opts ...connect.HandlerOp
 			votingServiceStreamResultsHandler.ServeHTTP(w, r)
 		case VotingServiceCreatePollProcedure:
 			votingServiceCreatePollHandler.ServeHTTP(w, r)
+		case VotingServiceClosePollProcedure:
+			votingServiceClosePollHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -172,4 +197,8 @@ func (UnimplementedVotingServiceHandler) StreamResults(context.Context, *connect
 
 func (UnimplementedVotingServiceHandler) CreatePoll(context.Context, *connect.Request[v1.PollCreationRequest]) (*connect.Response[v1.PollCreationResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("voting.v1.VotingService.CreatePoll is not implemented"))
+}
+
+func (UnimplementedVotingServiceHandler) ClosePoll(context.Context, *connect.Request[v1.PollRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("voting.v1.VotingService.ClosePoll is not implemented"))
 }

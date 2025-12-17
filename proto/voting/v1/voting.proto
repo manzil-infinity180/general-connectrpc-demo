@@ -3,6 +3,7 @@ syntax = "proto3";
 package voting.v1;
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
 
 message Option {
   string option_id = 1;
@@ -45,6 +46,8 @@ service VotingService {
 
   // Endpoint for creating a new poll
   rpc CreatePoll(PollCreationRequest) returns (PollCreationResponse);
+
+  rpc ClosePoll(PollRequest) returns (google.protobuf.Empty);
 }
 
 // Simple response message for a submitted vote

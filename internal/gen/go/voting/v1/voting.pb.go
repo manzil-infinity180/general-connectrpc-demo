@@ -9,6 +9,7 @@ package votingv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -510,7 +511,7 @@ var File_voting_v1_voting_proto protoreflect.FileDescriptor
 
 const file_voting_v1_voting_proto_rawDesc = "" +
 	"\n" +
-	"\x16voting/v1/voting.proto\x12\tvoting.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"e\n" +
+	"\x16voting/v1/voting.proto\x12\tvoting.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto\"e\n" +
 	"\x06Option\x12\x1b\n" +
 	"\toption_id\x18\x01 \x01(\tR\boptionId\x12\x1f\n" +
 	"\voption_text\x18\x02 \x01(\tR\n" +
@@ -544,13 +545,14 @@ const file_voting_v1_voting_proto_rawDesc = "" +
 	"\apoll_id\x18\x01 \x01(\tR\x06pollId\"T\n" +
 	"\x14PollCreationResponse\x12\x17\n" +
 	"\apoll_id\x18\x01 \x01(\tR\x06pollId\x12#\n" +
-	"\rshareable_url\x18\x02 \x01(\tR\fshareableUrl2\xe7\x01\n" +
+	"\rshareable_url\x18\x02 \x01(\tR\fshareableUrl2\xa4\x02\n" +
 	"\rVotingService\x12?\n" +
 	"\n" +
 	"SubmitVote\x12\x19.voting.v1.VoteSubmission\x1a\x16.voting.v1.VoteReceipt\x12F\n" +
 	"\rStreamResults\x12\x16.voting.v1.PollRequest\x1a\x1b.voting.v1.PollResultUpdate0\x01\x12M\n" +
 	"\n" +
-	"CreatePoll\x12\x1e.voting.v1.PollCreationRequest\x1a\x1f.voting.v1.PollCreationResponseB\xa9\x01\n" +
+	"CreatePoll\x12\x1e.voting.v1.PollCreationRequest\x1a\x1f.voting.v1.PollCreationResponse\x12;\n" +
+	"\tClosePoll\x12\x16.voting.v1.PollRequest\x1a\x16.google.protobuf.EmptyB\xa9\x01\n" +
 	"\rcom.voting.v1B\vVotingProtoP\x01ZFrahulxf.com/general-connectrpc-demo/internal/gen/go/voting/v1;votingv1\xa2\x02\x03VXX\xaa\x02\tVoting.V1\xca\x02\tVoting\\V1\xe2\x02\x15Voting\\V1\\GPBMetadata\xea\x02\n" +
 	"Voting::V1b\x06proto3"
 
@@ -577,6 +579,7 @@ var file_voting_v1_voting_proto_goTypes = []any{
 	(*PollRequest)(nil),           // 6: voting.v1.PollRequest
 	(*PollCreationResponse)(nil),  // 7: voting.v1.PollCreationResponse
 	(*timestamppb.Timestamp)(nil), // 8: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),         // 9: google.protobuf.Empty
 }
 var file_voting_v1_voting_proto_depIdxs = []int32{
 	0, // 0: voting.v1.Poll.options:type_name -> voting.v1.Option
@@ -586,11 +589,13 @@ var file_voting_v1_voting_proto_depIdxs = []int32{
 	2, // 4: voting.v1.VotingService.SubmitVote:input_type -> voting.v1.VoteSubmission
 	6, // 5: voting.v1.VotingService.StreamResults:input_type -> voting.v1.PollRequest
 	5, // 6: voting.v1.VotingService.CreatePoll:input_type -> voting.v1.PollCreationRequest
-	4, // 7: voting.v1.VotingService.SubmitVote:output_type -> voting.v1.VoteReceipt
-	3, // 8: voting.v1.VotingService.StreamResults:output_type -> voting.v1.PollResultUpdate
-	7, // 9: voting.v1.VotingService.CreatePoll:output_type -> voting.v1.PollCreationResponse
-	7, // [7:10] is the sub-list for method output_type
-	4, // [4:7] is the sub-list for method input_type
+	6, // 7: voting.v1.VotingService.ClosePoll:input_type -> voting.v1.PollRequest
+	4, // 8: voting.v1.VotingService.SubmitVote:output_type -> voting.v1.VoteReceipt
+	3, // 9: voting.v1.VotingService.StreamResults:output_type -> voting.v1.PollResultUpdate
+	7, // 10: voting.v1.VotingService.CreatePoll:output_type -> voting.v1.PollCreationResponse
+	9, // 11: voting.v1.VotingService.ClosePoll:output_type -> google.protobuf.Empty
+	8, // [8:12] is the sub-list for method output_type
+	4, // [4:8] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
 	4, // [4:4] is the sub-list for extension extendee
 	0, // [0:4] is the sub-list for field type_name
