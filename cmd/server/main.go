@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"rahulxf.com/general-connectrpc-demo/internal/auth"
 	"rahulxf.com/general-connectrpc-demo/internal/db"
@@ -52,6 +54,29 @@ func main() {
 
 	// mux
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		if err := dbPool.Ping(ctx); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(map[string]string{
+				"status":   "unhealthy",
+				"database": "disconnected",
+				"error":    err.Error(),
+			})
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":   "healthy",
+			"database": "connected",
+			"service":  "voting-api",
+		})
+	})
+
 	mux.Handle(
 		votingv1connect.NewVotingServiceHandler(votingService),
 	)
@@ -64,6 +89,6 @@ func main() {
 		Handler: handler,
 	}
 
-	log.Println("🚀 Voting service running on http://localhost:8080")
+	log.Println("Voting service running on http://localhost:8080")
 	log.Fatal(server.ListenAndServe())
 }
