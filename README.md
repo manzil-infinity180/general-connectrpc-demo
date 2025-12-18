@@ -55,3 +55,84 @@ Poll ID: f025f547-9bbb-4d5c-831c-f154be8d1a74
 You can view this poll in the database:
 psql $DATABASE_URL -c "SELECT * FROM polls WHERE id='f025f547-9bbb-4d5c-831c-f154be8d1a74';"
 ```
+---
+
+```md
+// Create Cricket Poll
+
+curl -X POST http://localhost:8080/voting.v1.VotingService/CreatePoll \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer fake-dev-token" \
+  -d '{
+    "question": "Who is the greatest batsman of all time?",
+    "option_texts": [
+      "Sachin Tendulkar (India)",
+      "Virat Kohli (India)",
+      "Rohit Sharma (India)",
+      "Ricky Ponting (Australia)",
+      "Chris Gayle (West Indies)",
+      "Pat Cummins (Australia)",
+      "AB de Villiers (South Africa)"
+    ]
+  }'
+
+```
+```md
+SELECT id, text FROM options WHERE poll_id='efbc5848-fe0f-49a8-94eb-8c1847e0fffd';
+
+voting=> SELECT id, text FROM options WHERE poll_id='efbc5848-fe0f-49a8-94eb-8c1847e0fffd';
+id                  |             text              
+--------------------------------------+-------------------------------
+df7d77b0-32a6-426b-8125-989b03cf1ec2 | Sachin Tendulkar (India)
+a8795838-151b-4024-a086-21420b61c4da | Virat Kohli (India)
+455584b7-ad1a-49b7-9f97-23a06371e3c1 | Rohit Sharma (India)
+63631c5d-cd29-4711-a3d9-ed531c42a79c | Ricky Ponting (Australia)
+de0949f8-38d7-4c6e-a02e-1dc6b6ecb7b4 | Chris Gayle (West Indies)
+b2bdba1b-c138-433c-894a-2dedbbb7156c | Pat Cummins (Australia)
+27b14ca2-17e0-40ae-8048-9cdeceea9ae7 | AB de Villiers (South Africa)
+(7 rows)
+```
+
+```md
+SELECT o.text, o.vote_count FROM options o WHERE o.poll_id='efbc5848-fe0f-49a8-94eb-8c1847e0fffd' ORDER BY o.vote_count DESC;
+             text              | vote_count 
+-------------------------------+------------
+ Sachin Tendulkar (India)      |          3
+ Virat Kohli (India)           |          2
+ Chris Gayle (West Indies)     |          0
+ Rohit Sharma (India)          |          0
+ AB de Villiers (South Africa) |          0
+ Pat Cummins (Australia)       |          0
+ Ricky Ponting (Australia)     |          0
+(7 rows)
+
+```
+
+```md
+// close the voting 
+
+curl -X POST http://localhost:8080/voting.v1.VotingService/ClosePoll \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer fake-dev-token" \
+-d "{\"poll_id\": \"$POLL_ID\"}"
+
+
+voting=> SELECT
+ROW_NUMBER() OVER (ORDER BY o.vote_count DESC) as rank,
+o.text as player,
+o.vote_count as votes,
+ROUND(o.vote_count * 100.0 / NULLIF(SUM(o.vote_count) OVER (), 0), 1) as percentage
+FROM options o
+WHERE o.poll_id='efbc5848-fe0f-49a8-94eb-8c1847e0fffd' ORDER BY o.vote_count DESC;
+rank |            player             | votes | percentage
+------+-------------------------------+-------+------------
+1 | Virat Kohli (India)           |     6 |       54.5
+2 | Sachin Tendulkar (India)      |     5 |       45.5
+3 | Chris Gayle (West Indies)     |     0 |        0.0
+4 | Rohit Sharma (India)          |     0 |        0.0
+5 | AB de Villiers (South Africa) |     0 |        0.0
+6 | Pat Cummins (Australia)       |     0 |        0.0
+7 | Ricky Ponting (Australia)     |     0 |        0.0
+(7 rows)
+
+```
